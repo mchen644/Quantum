@@ -1,2 +1,2 @@
 # Quantum
-Some Quantum related study, including theories, algorithms, codes, etc.
+Some Quantum related studies, including theories, algorithms, codes, etc.
