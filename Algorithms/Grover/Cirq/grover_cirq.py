@@ -115,7 +115,7 @@ for _ in range(samples_per_N_M):
                 print(f"{state}: {freq:.7f}")
                 state_decimal_num = int(state)
                 binary_str = bin(state_decimal_num)[2:]
-                probs[binary_str.zfill(n_qubit)] = "{:.7f}".format(freq)
+                probs[binary_str.zfill(n_qubit)] = float(freq)
             
             data_dict['probs'] = probs
             print(data_dict)
