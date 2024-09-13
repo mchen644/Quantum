@@ -8,6 +8,7 @@ import time
 import random
 import os
 import pickle
+import itertools
 
 def qft_rotations(circuit, n):
     """Performs qft on the first n qubits in circuit (without swaps)"""
@@ -41,6 +42,10 @@ def encode_state(qc, state, num_qubits):
         if bit == '1':
             qc.x(i)
 
+def binary_combinations(num):
+    combinations = [''.join(map(str, bits)) for bits in itertools.product([0, 1], repeat=num)]
+    return combinations
+
 if __name__ == '__main__':
     data_dir = "data"
     if not os.path.exists(data_dir):
@@ -48,12 +53,17 @@ if __name__ == '__main__':
         
     st = time.time()
     
-    num_qubits = 5
+    num_qubits = [2,3,4,5]
     num_samples = 1
     
     for _ in range(num_samples):
+        
+        # input_state = ''.join(random.choice('01') for _ in range(num_qubits))
+        for num_qubit in num_qubits:
+            input_states = binary_combinations(num_qubits)
+        print(input_states)
+        break
         qc = QuantumCircuit(num_qubits)
-        input_state = ''.join(random.choice('01') for _ in range(num_qubits))
         input_state_decimal = int(input_state, 2)
         data = {}
         encode_state(qc, input_state_decimal, num_qubits)
