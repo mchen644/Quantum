@@ -3,6 +3,7 @@ import numpy as np
 from collections import Counter
 import matplotlib.pyplot as plt
 import math
+import pickle
 
 def grover_oracle(n_qubits, target_states):
     oracle_circuit = cirq.Circuit()
@@ -45,7 +46,7 @@ def diffuser(n_qubits):
 
     return diffuser_circuit
 
-def grover_algorithm(n_qubits, target_states, iterations):
+def grover_algorithm(n_qubits, target_states, iterations, num_repititions=int(1e6)):
     
 
     qubits = cirq.LineQubit.range(n_qubits)
@@ -61,7 +62,7 @@ def grover_algorithm(n_qubits, target_states, iterations):
         circuit.append(diff)
 
     circuit.append(cirq.measure(*qubits, key='result'))
-    num_repititions = int(1e6)
+    num_repititions = num_repititions
     simulator = cirq.Simulator()
     print(num_repititions)
     result = simulator.run(circuit, repetitions=num_repititions)
@@ -72,55 +73,81 @@ def grover_algorithm(n_qubits, target_states, iterations):
     print(1)
     return frequencies, target_states, num_repititions
 
+
 import random
-n_qubits = [3,4,5,6,7,8,9]
-IF_DRAW_FREQUENCES = 1
-number_targets = 2
+n_qubits = [10, 11, 12, 13, 14]
+number_targets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+samples_per_N_M = 128
+num_repititions = int(1e6)
+IF_DRAW_FREQUENCES = 0
+
 n_qubit_time = {}
-for n_qubit in n_qubits:
-    target_states = []
-    for _ in range(number_targets):
-        target_state = ''.join(random.choice('01') for _ in range(n_qubit))
-        while target_state in target_states:
-            target_state = ''.join(random.choice('01') for _ in range(n_qubit))
-        target_states.append(target_state)
-    print("target states:", target_states)
+for _ in range(samples_per_N_M):
+    for n_qubit in n_qubits:
+        data_dict = {}
+        for num_target in number_targets:
+            target_states = []
+            for _ in range(num_target):
+                target_state = ''.join(random.choice('01') for _ in range(n_qubit))
+                while target_state in target_states:
+                    target_state = ''.join(random.choice('01') for _ in range(n_qubit))
+                target_states.append(target_state)
+            marked_states = set()
+            for marked_state in target_states:
+                marked_states.add(marked_state)
+            # print("mark states:", marked_states)
+            data_dict['marked_status'] = marked_states
+            
+            iterations = math.floor(np.pi / 4 * np.sqrt(2**n_qubit/num_target))
+            import time
+            st = time.time()
+            frequencies, targets, num_repititions = grover_algorithm(n_qubit, target_states, iterations, num_repititions)
+            cost_time = time.time() - st
+            print(f"The cost time for running {n_qubit} qubits is {cost_time}:")
+            n_qubit_time[n_qubit] = cost_time
 
-    iterations = math.floor(np.pi / 4 * np.sqrt(2**n_qubit/number_targets))
-    import time
-    st = time.time()
-    frequencies, targets, num_repititions = grover_algorithm(n_qubit, target_states, iterations)
-    cost_time = time.time() - st
-    print(f"The cost time for running {n_qubit} qubits is {cost_time}:")
-    n_qubit_time[n_qubit] = cost_time
+            for target in targets:
+                print(f"Target state: {str(int(target, 2))}")
 
-    for target in targets:
-        print(f"Target state: {str(int(target, 2))}")
+            probs = {}
+            
+            for state, freq in frequencies.items():
+                print(f"{state}: {freq:.7f}")
+                state_decimal_num = int(state)
+                binary_str = bin(state_decimal_num)[2:]
+                probs[binary_str.zfill(n_qubit)] = "{:.7f}".format(freq)
+            
+            data_dict['probs'] = probs
+            print(data_dict)
 
-    for state, freq in frequencies.items():
-        print(f"{state}: {freq:.7f}")
+            
+            decimal_list = sorted(int(binary_str, 2) for binary_str in data_dict['marked_status'])
+            file_name = "_".join(str(num) for num in decimal_list) + ".pkl"
+            with open(file_name, 'wb') as file:
+                pickle.dump(data_dict, file)
+            # continue
 
-    if IF_DRAW_FREQUENCES:
-        plt.figure(figsize=(10, 6))
-        bars = plt.bar(frequencies.keys(), frequencies.values())
-        targets_str = [str(int(x, 2)) for x in targets]
-        plt.title(f"Frequencies of States(target states = {targets_str})")
-        plt.xlabel("States")
-        plt.ylabel("Frequency")
+            if IF_DRAW_FREQUENCES:
+                plt.figure(figsize=(10, 6))
+                bars = plt.bar(frequencies.keys(), frequencies.values())
+                targets_str = [str(int(x, 2)) for x in targets]
+                plt.title(f"Frequencies of States(target states = {targets_str})")
+                plt.xlabel("States")
+                plt.ylabel("Frequency")
 
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width() / 2, height, f'{height:.7f}', 
-                    ha='center', va='bottom')
+                for bar in bars:
+                    height = bar.get_height()
+                    plt.text(bar.get_x() + bar.get_width() / 2, height, f'{height:.7f}', 
+                            ha='center', va='bottom')
 
-        plt.savefig(f'frequencies_bar_plot_{n_qubit}.png')
+                plt.savefig(f'frequencies_bar_plot_N_{n_qubit}_Targets_{num_target}.png')
 
-    for target in targets:
-        target = str(int(target, 2))
-        if target in frequencies:
-            print(f"Found the target state {target} with frequency {frequencies[target]:.3f}")
-        else:
-            print(f"Target state {target} not found.")
+            for target in targets:
+                target = str(int(target, 2))
+                if target in frequencies:
+                    print(f"Found the target state {target} with frequency {frequencies[target]:.3f}")
+                else:
+                    print(f"Target state {target} not found.")
 
 
 
@@ -173,4 +200,4 @@ def plot_dict_data_with_comparison(data_dict, save_path):
 
 # plot_dict_data_with_comparison(n_qubit_time, "simulation_time_plot.png")
 
-plot_dict_data(n_qubit_time, "simulation_time_plot.png")
+# plot_dict_data(n_qubit_time, "simulation_time_plot.png")
