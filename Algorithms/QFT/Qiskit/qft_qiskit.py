@@ -42,53 +42,50 @@ def encode_state(qc, state, num_qubits):
         if bit == '1':
             qc.x(i)
 
-def binary_combinations(num):
-    combinations = [''.join(map(str, bits)) for bits in itertools.product([0, 1], repeat=num)]
-    return combinations
+def generate_binary_strings(n):
+    return [bin(i)[2:].zfill(n) for i in range(2**n)]
 
 if __name__ == '__main__':
     data_dir = "data"
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
-        
-    st = time.time()
     
-    num_qubits = [2,3,4,5]
-    num_samples = 1
-    
-    for _ in range(num_samples):
+    num_qubits = [2,3,4,5,6,7,8,9,10,11,12]
+    input_states_list = []
         
         # input_state = ''.join(random.choice('01') for _ in range(num_qubits))
-        for num_qubit in num_qubits:
-            input_states = binary_combinations(num_qubits)
-        print(input_states)
-        break
-        qc = QuantumCircuit(num_qubits)
-        input_state_decimal = int(input_state, 2)
-        data = {}
-        encode_state(qc, input_state_decimal, num_qubits)
-        qc.draw('mpl')
+    for num_qubit in num_qubits:
+        input_states = generate_binary_strings(num_qubit)
+        input_states_list.append(input_states)
+    
+    for input_states in input_states_list:
+        for input_state in input_states:
+            N = len(input_state)
+            qc = QuantumCircuit(N)
+            input_state_decimal = int(input_state, 2)
+            data = {}
+            encode_state(qc, input_state_decimal, N)
+            qc.draw('mpl')
 
-        sim = Aer.get_backend("aer_simulator")
-        qc_init = qc.copy()
-        qc_init.save_statevector()
-        statevector = sim.run(qc_init).result().get_statevector()
-        
-        plot_bloch_multivector(statevector)
+            sim = Aer.get_backend("aer_simulator")
+            qc_init = qc.copy()
+            qc_init.save_statevector()
+            statevector = sim.run(qc_init).result().get_statevector()
+            
+            # plot_bloch_multivector(statevector)
 
-        qft(qc,num_qubits)
-        qc.draw('mpl')
-        qc.save_statevector()
-        statevector = sim.run(qc).result().get_statevector()
-        print(statevector)
-        # print(list(np.asarray(statevector)))
-        data[input_state] = list(np.asarray(statevector))
-        print(data)
-        print("Cost time:", time.time() - st)
-        file_name = f"{num_qubits}"+ "_" + f"{input_state}" + ".pkl"
-        file_path = os.path.join(data_dir, file_name)
-        with open(file_path, 'wb') as file:
-            pickle.dump(data, file)
+            qft(qc,N)
+            qc.draw('mpl')
+            qc.save_statevector()
+            statevector = sim.run(qc).result().get_statevector()
+            # print(statevector)
+            # print(list(np.asarray(statevector)))
+            data[input_state] = list(np.asarray(statevector))
+            print(data)
+            file_name = f"{N}"+ "_" + f"{input_state}" + ".pkl"
+            file_path = os.path.join(data_dir, file_name)
+            with open(file_path, 'wb') as file:
+                pickle.dump(data, file)
         
     
     # plot_bloch_multivector(statevector)
