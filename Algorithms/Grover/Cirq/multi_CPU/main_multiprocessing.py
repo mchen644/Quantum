@@ -77,9 +77,9 @@ def run_all_simulations(n_qubits, number_targets, samples_per_N_M=5, SHOTS=1_000
             print(f'Time taken for N={n_qubit}, M={num_target}: {duration:.2f} seconds')
 
 if __name__ == '__main__':
-    n_qubits = [10, 11, 12, 13, 14]
-    number_targets = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    samples_per_N_M = 6   
+    n_qubits = [i for i in range(10, 21)]
+    number_targets = [i for i in range(1, 33)]
+    samples_per_N_M = 128   
     SHOTS = int(1e6)
 
     run_all_simulations(n_qubits, number_targets, samples_per_N_M, SHOTS)
