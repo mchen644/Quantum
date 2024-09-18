@@ -70,7 +70,7 @@ def diffuser(n_qubits, circuit=None):
 
     return circuit
 
-def hea_ansatz(num_qubits, params, depth=1, circuit=None):
+def hea_ansatz(num_qubits, params, depth=1, circuit=None, idx=None):
     if circuit == None:
         circuit = QuantumCircuit(num_qubits)
     
@@ -79,7 +79,7 @@ def hea_ansatz(num_qubits, params, depth=1, circuit=None):
 
     for d in range(depth):
         for qubit in range(num_qubits):
-            theta = Parameter(f'theta_{d}_{qubit}')
+            theta = Parameter(f'theta_{d}_{qubit}_{idx}')
             circuit.ry(theta, qubit)
             circuit.rz(theta, qubit)  
             params.append(theta)
@@ -134,9 +134,13 @@ def random_ansatz(n_qubits, max_operations, precision, circuit=None):
             circuit.cx(target_qubits[0], target_qubits[1])
         
         elif gate_type == 'mcx' and len(target_qubits) > 1:
-            control_qubits = target_qubits[:-1]
-            target_qubit = target_qubits[-1]
-            circuit.mcx(control_qubits, target_qubit)
+            # control_qubits = target_qubits[:-1]
+            # target_qubit = target_qubits[-1]
+            """
+                TODO:
+                For now, only implement mcx to act on the last qubit:
+            """
+            circuit.mcx(list(range(n_qubits-1)), n_qubits-1)
     
     return circuit
 
@@ -161,7 +165,6 @@ def grover_HEA_ansatz(depth, n_qubits, precision, input_state, random_choices, c
                 iterations = calculate_grover_iterations(n_qubits, num_target=1)
                 print("target state: ", input_state_str)
                 print(f"only grover, the iteration nums should be calculated as {iterations}")
-                print(f"The input state")
                 
             circuit = grover_ansatz(n_qubits=n_qubits, 
                           target_states=input_state_str, 
@@ -172,7 +175,9 @@ def grover_HEA_ansatz(depth, n_qubits, precision, input_state, random_choices, c
             circuit, params = hea_ansatz(num_qubits=n_qubits, 
                                          params=params,
                                          depth=1, 
-                                         circuit=circuit,)
+                                         circuit=circuit,
+                                         idx=i,
+                                         )
         
         elif ansatz_choice == "Random":
             max_operations = 20 # equal to the number of operations per iteration in grover search

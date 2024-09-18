@@ -8,6 +8,7 @@ from qiskit.circuit import QuantumCircuit
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
+import re
 
 def simulate_circuit(circuit):
     backend = Aer.get_backend('statevector_simulator')
@@ -51,14 +52,26 @@ def get_initial_state_from_circuit(circuit: QuantumCircuit) -> str:
 
     return ''.join(initial_state)
 
+def simplify_qasm(qasm_string):
+    pattern = r'qubit\[\d+\] q;\n(.*)'
+    match = re.search(pattern, qasm_string, re.DOTALL)
 
-def create_random_initial_state(num_qubits, precision):
+    if match:
+        result = match.group(1)
+    else:
+        print("No match str")
+    return result
+
+def create_random_initial_state(num_qubits, precision, only_grover):
     circuit = QuantumCircuit(num_qubits)
     
     for qubit in range(num_qubits):
         if np.random.choice([True, False]):
             circuit.x(qubit) 
-            
+        
+        if only_grover:
+            continue
+        
         if np.random.choice([True, False]):
             circuit.h(qubit) 
             

@@ -17,45 +17,49 @@ from utils import *
 from functions import *
 from ansatz import *
 
+# nums_qubits = [i for i in range(1, 21)]
+# depths = [i for i in range(1, 3)]
+# num_samples = 200
 
-nums_qubits = [i for i in range(2, 3)]
-depths = [i for i in range(1, 2)]
-num_samples = 1
+nums_qubits = [i for i in range(1, 21)]
+depths = [i for i in range(1, 3)]
+num_samples = 200
 
 """
     TODO:
-    When generating datasets, need to specifically collect the only_grover data
+    1) When generating datasets, need to specifically collect the only_grover data
     random_choices = ["Grover"]
+    
+    2) No idea if the parameterized rotation gates will be more complex than non-parameterized gates,
+    if so, need to reduce these operations when the depth is very large to reduce the complexity
 """
 
-random_choices = ["Grover", "HEA", "Random", None]
+random_choices = ["Grover", "Random", "HEA", None] # "Grover", "Random", "HEA", None
 data_dir = "data"
 only_grover = 0
-IF_SAVE_PICKLE = 0
+IF_SAVE_PICKLE = 1
 
-# When generating dataset, we reduce the complexity by lowering the precision to , higher value indicates higher precisions
+# When generating dataset, we reduce the complexity by lowering the precision , higher value indicates higher precisions
 SAVE_PRECISION = 3 
 PARAMS_PRECISION = 3
+
 IF_STORE_HAMILTONIAN = 0
 
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
-for sample in range(num_samples):
-    for num_qubits in nums_qubits:
+
+for num_qubits in nums_qubits:
+    random_choices_updated = random_choices
+    if num_qubits == 1:
+        if "Grover" in random_choices_updated:
+            random_choices_updated.remove("Grover")
+    if len(random_choices_updated) == 0:
+        print("random choices are empty, continue to the next loop")
+        continue
+    for depth in depths:
+        for sample in range(num_samples):
         
-        random_choices_updated = random_choices
-        
-        if num_qubits == 1:
-            if "Grover" in random_choices_updated:
-                random_choices_updated.remove("Grover")
-        
-        if len(random_choices_updated) == 0:
-            print("random choices are empty, continue to the next loop")
-            continue
-        
-        for depth in depths:
-            
             if "Grover" in random_choices_updated and len(random_choices) == 1:
                 only_grover = 1
                 
@@ -64,11 +68,11 @@ for sample in range(num_samples):
             if IF_STORE_HAMILTONIAN:
                 data["H"] = hamiltonian
             
-            initial_circuit =  create_random_initial_state(num_qubits, precision=PARAMS_PRECISION)
+            initial_circuit =  create_random_initial_state(num_qubits, precision=PARAMS_PRECISION, only_grover=only_grover)
             if only_grover:
-                # Only implement Grover search, the input state should not be in superposition
-                while is_superposition_from_circuit(initial_circuit):
-                    initial_circuit =  create_random_initial_state(num_qubits, precision=PARAMS_PRECISION)
+                # # Only implement Grover search, the input state should not be in superposition
+                # while is_superposition_from_circuit(initial_circuit):
+                #     initial_circuit =  create_random_initial_state(num_qubits, precision=PARAMS_PRECISION, only_grover=only_grover)
                 depth = 1
                 
             hea_circuit, params, target_state = grover_HEA_ansatz(depth=depth, 
@@ -85,14 +89,15 @@ for sample in range(num_samples):
             expectation_value = calculate_expectation_value(output_state, hamiltonian)
             
             qasm_string = qasm.dumps(bound_circuit, experimental=qasm.ExperimentalFeatures.SWITCH_CASE_V1)
-            qasm_string = extract_after_third_newline(qasm_string)
-            
+            qasm_string = simplify_qasm(qasm_string=qasm_string)
+            # print(qasm_string)
             data["random_choices"] = random_choices_updated
             if only_grover:
                 data["target_state"] = target_state
             data["num_qubits"] = num_qubits
             data["only_grover"] = only_grover
             data["ansatz"] = qasm_string.replace('\n', ' ')
+            data['depth'] = depth
             data['output state'] = truncate_statevector(output_state, SAVE_PRECISION)
             if IF_STORE_HAMILTONIAN:
                 data['Expectation'] = np.round(expectation_value, SAVE_PRECISION)
