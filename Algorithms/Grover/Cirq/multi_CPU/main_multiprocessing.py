@@ -13,7 +13,6 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
 
 
-
 def save_pickle(frequencies, data_dict, n_qubit, num_target):
     probs = {}
 
@@ -77,7 +76,7 @@ def run_all_simulations(n_qubits, number_targets, samples_per_N_M=5, SHOTS=1_000
             print(f'Time taken for N={n_qubit}, M={num_target}: {duration:.2f} seconds')
 
 if __name__ == '__main__':
-    n_qubits = [i for i in range(10, 21)]
+    n_qubits = [i for i in range(18, 21)]
     number_targets = [i for i in range(1, 33)]
     samples_per_N_M = 128   
     SHOTS = int(1e6)
