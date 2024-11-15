@@ -10,6 +10,9 @@ from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
 import re
 
+def generate_state_order(num_qubits):
+    return [f"{i:0{num_qubits}b}" for i in range(2**num_qubits)]
+
 def simulate_circuit(circuit):
     backend = Aer.get_backend('statevector_simulator')
     transpiled_circuit = transpile(circuit, backend)

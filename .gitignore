@@ -1,1 +1,5 @@
 *.pkl
+*.json
+*.pyc
+dataset_13-15.zip
+divide.sh

@@ -16,13 +16,14 @@ import numpy as np
 from utils import *
 from functions import *
 from ansatz import *
+import time
 
 # nums_qubits = [i for i in range(1, 21)]
 # depths = [i for i in range(1, 3)]
 # num_samples = 200
 
-nums_qubits = [i for i in range(1, 21)]
-depths = [i for i in range(1, 3)]
+nums_qubits = [i for i in range(1, 16)]
+depths = [i for i in range(1, 3)] # didn't work for Only_grover because grover will automatically calculate the iterations
 num_samples = 200
 
 """
@@ -34,7 +35,7 @@ num_samples = 200
     if so, need to reduce these operations when the depth is very large to reduce the complexity
 """
 
-random_choices = ["Grover", "Random", "HEA", None] # "Grover", "Random", "HEA", None
+random_choices = ["HEA"] # "Grover", "Random", "HEA", "QAOA" None
 data_dir = "data"
 only_grover = 0
 IF_SAVE_PICKLE = 1
@@ -42,13 +43,13 @@ IF_SAVE_PICKLE = 1
 # When generating dataset, we reduce the complexity by lowering the precision , higher value indicates higher precisions
 SAVE_PRECISION = 3 
 PARAMS_PRECISION = 3
-
 IF_STORE_HAMILTONIAN = 0
 
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
-
+st = time.time()
+print("start")
 for num_qubits in nums_qubits:
     random_choices_updated = random_choices
     if num_qubits == 1:
@@ -89,8 +90,9 @@ for num_qubits in nums_qubits:
             expectation_value = calculate_expectation_value(output_state, hamiltonian)
             
             qasm_string = qasm.dumps(bound_circuit, experimental=qasm.ExperimentalFeatures.SWITCH_CASE_V1)
+            print(qasm_string)
             qasm_string = simplify_qasm(qasm_string=qasm_string)
-            # print(qasm_string)
+            
             data["random_choices"] = random_choices_updated
             if only_grover:
                 data["target_state"] = target_state
@@ -99,11 +101,13 @@ for num_qubits in nums_qubits:
             data["ansatz"] = qasm_string.replace('\n', ' ')
             data['depth'] = depth
             data['output state'] = truncate_statevector(output_state, SAVE_PRECISION)
+            data['output probs'] = np.round(np.abs(data['output state']) ** 2, SAVE_PRECISION)
+            data["output_state_order"] = generate_state_order(num_qubits)
             if IF_STORE_HAMILTONIAN:
                 data['Expectation'] = np.round(expectation_value, SAVE_PRECISION)
             
             if IF_SAVE_PICKLE:
-                file_name = f"{num_qubits}_{depth}_{sample}" + ".pkl"
+                file_name = f"{random_choices[0]}_{num_qubits}_{depth}_{sample}" + ".pkl"
                 file_path = os.path.join(data_dir, file_name)
                 with open(file_path, 'wb') as file:
                     pickle.dump(data, file)
@@ -113,3 +117,5 @@ for num_qubits in nums_qubits:
             
             # print("Output State:", output_state)
             # print("Expectation:", expectation_value)
+            
+print("cost time:", time.time() - st)

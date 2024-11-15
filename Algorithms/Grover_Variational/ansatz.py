@@ -91,6 +91,29 @@ def hea_ansatz(num_qubits, params, depth=1, circuit=None, idx=None):
 
     return circuit, params
 
+def qaoa_ansatz(num_qubits, params, depth=1, circuit=None, idx=None):
+    if circuit == None:
+        circuit = QuantumCircuit(num_qubits)
+    
+    if params == None:
+        params = []
+
+    for d in range(depth):
+        # Problem unitary (Cost Hamiltonian)
+        gamma = Parameter(f'qaoa_gamma_{d}_{idx}')
+        beta = Parameter(f'qaoa_beta_{d}_{idx}')
+
+        # Problem unitary (Cost Hamiltonian)
+        circuit.rzz(2 * gamma, 0, 1)
+
+        # Mixer unitary
+        circuit.rx(2 * beta, 0)
+        circuit.rx(2 * beta, 1)
+        params.append(gamma)
+        params.append(beta)
+
+    return circuit, params
+
 def grover_ansatz(n_qubits, target_states, iterations, circuit=None):
     if circuit == None:
         circuit = QuantumCircuit(n_qubits)
@@ -185,6 +208,14 @@ def grover_HEA_ansatz(depth, n_qubits, precision, input_state, random_choices, c
                                     max_operations, 
                                     precision, 
                                     circuit=circuit)
+            
+        elif ansatz_choice == "QAOA":
+            circuit, params = qaoa_ansatz(num_qubits=n_qubits, 
+                                         params=params,
+                                         depth=1, 
+                                         circuit=circuit,
+                                         idx=i,
+                                         )
         elif ansatz_choice == None:
             continue
     return circuit, params, input_state_str
